@@ -1,7 +1,8 @@
 
 streamlit
 streamlit-drawable-canvas
-Pillow
 torch
 torchvision
 scikit-learn
+Pillow
+numpy
