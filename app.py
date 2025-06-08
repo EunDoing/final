@@ -61,10 +61,12 @@ st.set_page_config(page_title="은하 창조", layout="centered")
 st.title("🎨 내가 만든 은하가 이미 존재한다고?")
 st.markdown("🪐 아래 캔버스에 은하를 그리면, 실제 SDSS 은하 중 유사한 이미지를 찾아줘요!")
 
+stroke_color = st.color_picker(" 선 색상 선택", "#ffffff"
+
 canvas_result = st_canvas(
     fill_color="rgba(255, 255, 255, 0)",
     stroke_width=6,
-    stroke_color="#ffffff",
+    stroke_color=stroke_color,
     background_color="#1a1a3d",
     width=280,
     height=280,
