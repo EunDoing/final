@@ -1,4 +1,3 @@
-
 import os
 import streamlit as st
 from PIL import Image
@@ -10,11 +9,11 @@ from sklearn.metrics.pairwise import cosine_similarity
 from streamlit_drawable_canvas import st_canvas
 import numpy as np
 
-# 설정
+# ✅ 1. 이미지 폴더 설정
 IMG_DIR = 'downloaded_images_100'
 os.makedirs(IMG_DIR, exist_ok=True)
 
-# CNN 특성 추출기 정의
+# ✅ 2. CNN 특성 추출기 정의
 class FeatureExtractor(nn.Module):
     def __init__(self):
         super().__init__()
@@ -34,7 +33,7 @@ transform = transforms.Compose([
     transforms.ToTensor(),
 ])
 
-# 기존 이미지 불러오기 및 특징 벡터 생성
+# ✅ 3. 갤러리 이미지 불러오기 + 특징 벡터 생성
 @st.cache_data
 def load_gallery_features():
     image_paths = [os.path.join(IMG_DIR, fname) for fname in os.listdir(IMG_DIR) if fname.endswith('.jpg')]
@@ -52,7 +51,7 @@ def load_gallery_features():
             continue
     return valid_paths, feature_vectors
 
-# 유사 이미지 찾기
+# ✅ 4. 유사 이미지 찾기 함수
 def find_similar_images(user_img, gallery_paths, gallery_vectors, top_k=3):
     user_tensor = transform(user_img.convert('RGB')).unsqueeze(0).to(device)
     user_feat = model(user_tensor).cpu().numpy()
@@ -60,13 +59,14 @@ def find_similar_images(user_img, gallery_paths, gallery_vectors, top_k=3):
     top_indices = sims.argsort()[::-1][:top_k]
     return [(gallery_paths[i], sims[i]) for i in top_indices]
 
-# Streamlit UI
+# ✅ 5. Streamlit UI
+st.set_page_config(page_title="내가 그린 은하", layout="centered")
 st.title("🎨 내가 그린 은하는 어떤 은하일까?")
 st.markdown("마우스로 그림을 그리면 유사한 SDSS 은하 이미지를 찾아줄게요!")
 
-# 그리기 캔버스
+# ✅ 6. 그리기 캔버스
 canvas_result = st_canvas(
-    fill_color="rgba(255, 255, 255, 0)",  # 투명
+    fill_color="rgba(255, 255, 255, 0)",
     stroke_width=6,
     stroke_color="#ffffff",
     background_color="#1a1a3d",
@@ -76,7 +76,7 @@ canvas_result = st_canvas(
     key="canvas"
 )
 
-# 이미지 처리
+# ✅ 7. 유사 은하 찾기
 if canvas_result.image_data is not None:
     img = Image.fromarray((canvas_result.image_data).astype(np.uint8)).convert('RGB')
     st.image(img, caption="내가 그린 은하", width=200)
