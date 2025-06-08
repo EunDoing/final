@@ -64,7 +64,7 @@ st.set_page_config(page_title="은하 창조", layout="centered")
 st.title("🎨 내가 만든 은하가 이미 존재한다고?")
 st.markdown("아래 캔버스에 당신만의 은하를 만들면 유사한 SDSS 은하 이미지를 찾아줄게요!")
 
-# ✅ 6. 그리기 캔버스
+# ✅ 6. 그리기 캔버스 (색칠 가능하게 brush로 변경)
 canvas_result = st_canvas(
     fill_color="rgba(255, 255, 255, 0)",
     stroke_width=6,
@@ -72,7 +72,7 @@ canvas_result = st_canvas(
     background_color="#1a1a3d",
     width=280,
     height=280,
-    drawing_mode="freedraw",
+    drawing_mode="brush",  # ← 여기 수정됨
     key="canvas"
 )
 
@@ -87,4 +87,4 @@ if canvas_result.image_data is not None:
 
         st.subheader("🔎 가장 유사한 은하 이미지")
         for path, score in results:
-            st.image(path, caption=f"유사도: {score:.4f}", use_column_width=True)
+            st.image(path, caption=f"유사도: {score:.4f}", use_container_width=True)  # ← 여기 수정됨
