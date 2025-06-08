@@ -4,15 +4,18 @@ from streamlit_drawable_canvas import st_canvas
 from PIL import Image
 import numpy as np
 import os
-from torchvision import transforms
+import torch
+import torch.nn as nn
+import torchvision.transforms as transforms
+from torchvision import models
 from sklearn.metrics.pairwise import cosine_similarity
 
-# 설정
+# 기본 설정
 GALLERY_DIR = "./gallery"
 st.set_page_config(page_title="내가 그린 은하는 어떤 은하?", layout="centered")
-st.title("🎨 내가 그린 은하를 분석해볼까요?")
+st.title("🎨 내가 그린 은하를 분석해볼까요? (CNN 기반 유사도 검색)")
 
-# 캔버스 설정
+# canvas 인터페이스
 canvas_result = st_canvas(
     fill_color="rgba(255, 255, 255, 1)", 
     stroke_width=6,
@@ -26,44 +29,60 @@ canvas_result = st_canvas(
 
 # 이미지 전처리
 transform = transforms.Compose([
-    transforms.Resize((128, 128)),
+    transforms.Resize((224, 224)),
     transforms.ToTensor(),
 ])
 
-def find_top_similar_images(input_pil, gallery_dir=GALLERY_DIR, top_n=3):
-    input_tensor = transform(input_pil).view(-1).numpy().reshape(1, -1)
+# CNN 특성 추출기
+@st.cache_resource
+def load_model():
+    resnet = models.resnet18(pretrained=True)
+    model = nn.Sequential(*list(resnet.children())[:-1])
+    model.eval()
+    return model
 
-    similarities = []
+model = load_model()
+
+# gallery 이미지 feature vector 미리 추출
+@st.cache_resource
+def extract_gallery_features():
+    vectors = []
     paths = []
-
-    for fname in os.listdir(gallery_dir):
+    for fname in os.listdir(GALLERY_DIR):
         if fname.endswith(('.jpg', '.png')):
-            path = os.path.join(gallery_dir, fname)
-            gallery_img = Image.open(path).convert("RGB")
-            gallery_tensor = transform(gallery_img).view(-1).numpy().reshape(1, -1)
+            path = os.path.join(GALLERY_DIR, fname)
+            try:
+                img = Image.open(path).convert('RGB')
+                tensor = transform(img).unsqueeze(0)
+                feat = model(tensor).view(-1).detach().numpy()
+                vectors.append(feat)
+                paths.append(path)
+            except:
+                continue
+    return vectors, paths
 
-            sim = cosine_similarity(input_tensor, gallery_tensor)[0][0]
-            similarities.append(sim)
-            paths.append(path)
+gallery_features, gallery_paths = extract_gallery_features()
 
-    sorted_idx = np.argsort(similarities)[::-1][:top_n]
-    top_paths = [paths[i] for i in sorted_idx]
-    top_scores = [similarities[i] for i in sorted_idx]
-    return top_paths, top_scores
+# 유사도 계산 함수
+def find_similar_images(user_img, top_k=3):
+    tensor = transform(user_img).unsqueeze(0)
+    user_feat = model(tensor).view(-1).detach().numpy().reshape(1, -1)
 
-# 실행 버튼
-if st.button("✨ 분석 시작"):
+    sims = cosine_similarity(user_feat, gallery_features)[0]
+    top_indices = sims.argsort()[::-1][:top_k]
+    return [(gallery_paths[i], sims[i]) for i in top_indices]
+
+# 분석 버튼
+if st.button("✨ CNN 기반 분석 시작"):
     if canvas_result.image_data is not None:
-        # canvas → PIL
         user_img = Image.fromarray(np.uint8(canvas_result.image_data)).convert("RGB")
-
         st.image(user_img, caption="🖼️ 당신이 그린 은하", width=256)
 
-        with st.spinner("분석 중..."):
-            top_paths, top_scores = find_top_similar_images(user_img)
+        with st.spinner("비슷한 은하를 찾는 중..."):
+            results = find_similar_images(user_img)
 
-        st.markdown("### 🔍 가장 유사한 은하들")
-        for i in range(len(top_paths)):
-            st.image(top_paths[i], caption=f"유사도: {top_scores[i]:.4f}", width=240)
+        st.markdown("### 🔍 유사 은하 Top 3")
+        for path, score in results:
+            st.image(path, caption=f"유사도: {score:.4f}", width=240)
     else:
         st.warning("먼저 은하를 그려주세요!")
