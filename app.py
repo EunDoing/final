@@ -60,9 +60,9 @@ def find_similar_images(user_img, gallery_paths, gallery_vectors, top_k=3):
     return [(gallery_paths[i], sims[i]) for i in top_indices]
 
 # ✅ 5. Streamlit UI
-st.set_page_config(page_title="내가 그린 은하", layout="centered")
-st.title("🎨 내가 그린 은하는 어떤 은하일까?")
-st.markdown("마우스로 그림을 그리면 유사한 SDSS 은하 이미지를 찾아줄게요!")
+st.set_page_config(page_title="은하 창조", layout="centered")
+st.title("🎨 내가 만든 은하가 이미 존재한다고?")
+st.markdown("아래 캔버스에 당신만의 은하를 만들면 유사한 SDSS 은하 이미지를 찾아줄게요!")
 
 # ✅ 6. 그리기 캔버스
 canvas_result = st_canvas(
